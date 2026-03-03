@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
         progressBarStatus = 0
         binding.progressBar.progress = 0
         binding.txtComplete.text = ""
-        binding.txtProgress.text = "Descargando: 0%"
+        binding.txtProgress.text = getString(R.string.downloading_progress, 0)
 
         // 2. Creamos el Handler asociado al hilo principal (MainLooper)
         val handler = Handler(Looper.getMainLooper())
@@ -59,13 +59,13 @@ class MainActivity : AppCompatActivity() {
                 // 4. Actualizamos la Interfaz usando el Handler (Hilo principal)
                 handler.post {
                     binding.progressBar.progress = progressBarStatus
-                    binding.txtProgress.text = "Descargando: $progressBarStatus%"
+                    binding.txtProgress.text = getString(R.string.downloading_progress, progressBarStatus)
                 }
             }
 
             // 5. Al finalizar (llega al 100%) mostramos el mensaje de éxito
             handler.post {
-                binding.txtComplete.text = "¡Descarga completada!"
+                binding.txtComplete.text = getString(R.string.download_completed)
                 binding.btnStart.isEnabled = true // Reactivamos el botón
                 isDownloading = false
             }
