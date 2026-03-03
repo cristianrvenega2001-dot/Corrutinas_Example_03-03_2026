@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 pluginManagement {
     repositories {
         google {
@@ -24,4 +26,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "Corrutinas_Example_03-03_2026"
 include(":app")
- 
