@@ -1,116 +1,74 @@
 package com.example.corrutinas_example_03_03_2026
 
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
+import android.os.Handler
+import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.lifecycleScope
 import com.example.corrutinas_example_03_03_2026.databinding.ActivityMainBinding
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
-
-    private lateinit var  binding: ActivityMainBinding
-
-
+    private lateinit var binding: ActivityMainBinding
+    private var progressBarStatus = 0
+    private var isDownloading = false // Variable para bloquear el botón
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Evento del botón de iniciar descarga
         binding.btnStart.setOnClickListener {
-        starDownload()
-      }
-
+            // Solo iniciamos si no hay una descarga ya en proceso
+            if (!isDownloading) {
+                startDownload()
+            }
         }
+    }
 
+    private fun startDownload() {
+        // 1. Configuraciones iniciales (Bloqueo de UI)
+        isDownloading = true
+        binding.btnStart.isEnabled = false // Se bloquea el botón según los requerimientos
+        progressBarStatus = 0
+        binding.progressBar.progress = 0
+        binding.txtComplete.text = ""
+        binding.txtProgress.text = "Descargando: 0%"
 
-    // Variable que guarda la referencia de la coroutine activa
-    // Nos permite cancelarla si es necesario
+        // 2. Creamos el Handler asociado al hilo principal (MainLooper)
+        val handler = Handler(Looper.getMainLooper())
 
-    private var downloadJob : Job? = null
+        // 3. Simulamos la descarga en un Hilo separado con "Thread"
+        Thread {
+            while (progressBarStatus < 100) {
+                // Avanzamos de 10% en 10%
+                progressBarStatus += 10
 
-
-    private fun starDownload() {
-
-        // Si ya hay una descarga ejecutándose, la cancelamos
-         downloadJob?.cancel()
-
-        downloadJob = lifecycleScope.launch (Dispatchers.Main){
-
-            try {
-                // Deshabilitamos el botón para evitar múltiples descargas
-
-                   binding.btnStart.isEnabled= false
-                // Limpiamos mensaje previo
-                    binding.txtComplete.text =""
-                    binding.txtProgress.text = "Preparando descargar"
-
-
-                // Simulamos trabajo pesado (como red o base de datos)
-                // Cambiamos al Dispatcher.IO para no usar el hilo principal
-
-                withContext(Dispatchers.IO){
-
-                    for(i in 1 ..100) {
-
-                        // delay() NO bloquea el hilo
-                        // Suspende la coroutine y libera el hilo
-
-                        delay(300)
-
-                        // Volvemos al hilo principal para actualizar la UI
-                        withContext(Dispatchers.Main) {
-                            binding.progressBar.progress = i
-                            binding.txtProgress.text = "Descargando $i%"
-                        }
-                    }
+                // Aseguramos que no se pase del 100%
+                if (progressBarStatus > 100) {
+                    progressBarStatus = 100
                 }
 
-                // Cuando termina correctamente
-                binding.txtComplete.text ="¡Descarga Completada!"
+                // Pausa obligatoria del ejercicio: 1 segundo (1000ms)
+                try {
+                    Thread.sleep(1000)
+                } catch (e: InterruptedException) {
+                    e.printStackTrace()
+                }
 
-            }catch ( e: CancellationException){
-
-                // Se ejecuta si la coroutine fue cancelada manualmente
-                binding.txtComplete.text ="Error en la descargar"
-
-            }finally {
-
-                // Siempre se ejecuta, haya éxito o error
-                // Reactivamos el botón
-                binding.btnStart.isEnabled = true
+                // 4. Actualizamos la Interfaz usando el Handler (Hilo principal)
+                handler.post {
+                    binding.progressBar.progress = progressBarStatus
+                    binding.txtProgress.text = "Descargando: $progressBarStatus%"
+                }
             }
 
-
-
-        }
-
-
-
-
+            // 5. Al finalizar (llega al 100%) mostramos el mensaje de éxito
+            handler.post {
+                binding.txtComplete.text = "¡Descarga completada!"
+                binding.btnStart.isEnabled = true // Reactivamos el botón
+                isDownloading = false
+            }
+        }.start()
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    }
+}
